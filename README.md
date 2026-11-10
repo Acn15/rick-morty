@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Rick and Morty Web
 
-## Getting Started
+Frontend Next.js (App Router) para listar e buscar episódios e personagens, com detalhe e navegação cruzada entre os dois. Os dados vêm exclusivamente da API Nest do projeto `api-zrp` — o frontend **não** chama a Rick and Morty API diretamente.
 
-First, run the development server:
+## Pré-requisitos
+
+- Node.js 20+ (recomendado) e npm
+- API Nest (`api-zrp`) em execução e acessível na URL configurada em `API_BASE_URL`
+
+## Instalação
+
+```bash
+npm install
+```
+
+## Configuração de ambiente
+
+1. Copie o exemplo de ambiente:
+
+```bash
+cp .env.example .env
+```
+
+2. Ajuste `API_BASE_URL` se necessário. Variável usada pelos helpers server-side (`src/app/**/api/*`):
+
+| Variável       | Obrigatória | Descrição                                                                 |
+| -------------- | ----------- | ------------------------------------------------------------------------- |
+| `API_BASE_URL` | Sim         | URL base da API Nest, sem barra no final (ex.: `http://localhost:3000`) |
+
+O Next carrega `.env` automaticamente. Não commite `.env` com valores locais.
+
+### Acesso local vs. container
+
+`API_BASE_URL` é resolvida **no processo do Next** (Server Components / `fetch` no servidor), não no browser.
+
+- **Next rodando no host** (fluxo documentado aqui: `npm run dev` / `npm start`): use um host alcançável a partir da sua máquina. Se a API Nest estiver publicada em `localhost:3000` (por exemplo via Docker Compose do `api-zrp` com mapeamento `3000:3000`), o valor adequado é `http://localhost:3000`.
+- **Next rodando dentro de um container**: `localhost` aponta para o próprio container, não para o host nem para o serviço Nest. Nesse caso use o hostname da rede Docker do serviço da API (ou o gateway do host), não `http://localhost:3000`, a menos que a API esteja no mesmo container.
+
+Este repositório não inclui Docker do frontend; a nota acima evita configurar `localhost` incorretamente se você empacotar o Next depois.
+
+## Scripts (`package.json`)
+
+| Comando           | Descrição                                      |
+| ----------------- | ---------------------------------------------- |
+| `npm run dev`     | Servidor de desenvolvimento Next na porta 3001 |
+| `npm run build`   | Build de produção                              |
+| `npm start`       | Serve o build na porta 3001                    |
+| `npm run lint`    | ESLint                                         |
+| `npm test`        | Vitest em modo watch                           |
+| `npm run test:run`| Vitest em execução única (CI)                  |
+
+## Como rodar
+
+Com a API Nest disponível e `.env` configurado:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra [http://localhost:3001](http://localhost:3001).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Produção local:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+O app também fica em [http://localhost:3001](http://localhost:3001).
 
-To learn more about Next.js, take a look at the following resources:
+## Como o frontend alcança o Nest
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Server Components / helpers em `src/app/episodes/api` e `src/app/characters/api` leem `process.env.API_BASE_URL`.
+2. Fazem `fetch` para rotas Nest, por exemplo:
+   - `GET {API_BASE_URL}/episodes`
+   - `GET {API_BASE_URL}/episodes/:id/characters`
+   - `GET {API_BASE_URL}/characters`
+   - `GET {API_BASE_URL}/characters/:id`
+3. O browser só conversa com o Next; a chamada à Nest acontece no servidor do Next.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Rotas principais do app: `/` (episódios), `/episodes/[id]`, `/characters`, `/characters/[id]`.
+# rick-morty
